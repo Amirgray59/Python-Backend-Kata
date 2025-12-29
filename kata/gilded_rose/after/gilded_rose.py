@@ -7,6 +7,15 @@ BACKSTAGE = "Backstage passes to a TAFKAL80ETC concert"
 maxQuantity = 50
 minQuantity = 0
 
+def increase_quality(item, amount=1):
+    if item.quality < maxQuantity:
+        item.quality += amount
+
+
+def decrease_quality(item, amount=1):
+    if item.quality > minQuantity:
+        item.quality -= amount
+
 
 class GildedRose(object):
 
@@ -16,32 +25,29 @@ class GildedRose(object):
     def update_quality(self):
         for item in self.items:
             if item.name != AGED_BRIE and item.name != BACKSTAGE:
-                if item.quality > minQuantity:
-                    if item.name != SULFURAS:
-                        item.quality = item.quality - 1
+                if item.name != SULFURAS:
+                    decrease_quality(item)
             else:
                 if item.quality < maxQuantity:
-                    item.quality = item.quality + 1
+                    increase_quality(item)
                     if item.name == BACKSTAGE:
                         if item.sell_in < 11:
-                            if item.quality < maxQuantity:
-                                item.quality = item.quality + 1
+                            increase_quality(item)
                         if item.sell_in < 6:
-                            if item.quality < maxQuantity:
-                                item.quality = item.quality + 1
+                            increase_quality(item)
+
             if item.name != SULFURAS:
                 item.sell_in = item.sell_in - 1
+                
             if item.sell_in < 0:
                 if item.name != AGED_BRIE:
                     if item.name != BACKSTAGE:
-                        if item.quality > minQuantity:
-                            if item.name != SULFURAS:
-                                item.quality = item.quality - 1
+                        if item.name != SULFURAS:
+                            decrease_quality(item)
                     else:
-                        item.quality = item.quality - item.quality
+                        item.quality = 0
                 else:
-                    if item.quality < maxQuantity:
-                        item.quality = item.quality + 1
+                    increase_quality(item)
 
 
 class Item:
