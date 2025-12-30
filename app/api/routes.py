@@ -26,16 +26,17 @@ def create_item(
 ):
     item_id = str(uuid.uuid4())
 
-    created = ItemResponse(
-        id=item_id,
-        name=item.name,
-        sell_in=item.sell_in,
-        quality=item.quality,
-    )
+    created = {
+        "id": item_id,
+        "name": item.name,
+        "sell_in": item.sell_in,
+        "quality": item.quality,
+    }
 
     db[item_id] = created
     response.headers["Location"] = f"/items/{item_id}"
     return created
+
 
 
 @router.get(
@@ -48,7 +49,7 @@ def get_item(
 ):
     item = db.get(item_id)
     if not item:
-        return item_not_found(item_id)
+        item_not_found(item_id)
     return item
 
 
@@ -63,19 +64,16 @@ def update_item(
 ):
     item = db.get(item_id)
     if not item:
-        return item_not_found(item_id)
+        item_not_found(item_id)
 
-    data = item.dict()
+    data = item.copy()
 
-    if payload.sell_in is not None:
-        data["sell_in"] = payload.sell_in
+    updates = payload.model_dump(exclude_unset=True)
+    data.update(updates)
 
-    if payload.quality is not None:
-        data["quality"] = payload.quality
+    db[item_id] = data
+    return data
 
-    updated = ItemResponse(**data)
-    db[item_id] = updated
-    return updated
 
 
 @router.delete(
@@ -87,7 +85,6 @@ def delete_item(
     db: FakeDB = Depends(get_db),
 ):
     if item_id not in db:
-        return item_not_found(item_id)
+        item_not_found(item_id)
 
     del db[item_id]
-    return Response(status_code=status.HTTP_204_NO_CONTENT)

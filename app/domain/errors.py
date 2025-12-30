@@ -1,6 +1,6 @@
 from typing import Union 
 from fastapi.responses import JSONResponse
-from fastapi import status
+from fastapi import status, HTTPException
 
 def report_error(
     *,
@@ -32,11 +32,13 @@ def invalid_type(detail:str) :
     detail=detail
     )
 
-def item_not_found(id:str) : 
-    return report_error(status_code=status.HTTP_404_NOT_FOUND, 
-    type_="https://example.com/problems/item-not-found",
-    title="Item not found",
-    detail=f"Item id {id} does not exist"
+def item_not_found(item_id: str) -> None:
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={
+            "type": "https://example.com/problems/item-not-found",
+            "title": "Item not found",
+            "status": 404,
+            "detail": f"Item with id '{item_id}' was not found",
+        },
     )
-    
-    

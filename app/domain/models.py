@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Union
 
 class ItemCreate(BaseModel) : 
@@ -6,14 +6,14 @@ class ItemCreate(BaseModel) :
     sell_in: int 
     quality: int 
 
-class ItemUpdate(BaseModel) : 
-    sell_in: Union[None, int]
-    quality: Union[None, int]
-
-class ItemResponse(BaseModel) : 
-    id: int 
-    name:str 
-    sell_in:int 
-    quality:int
+class ItemUpdate(BaseModel):
+    name: str | None = None
+    sell_in: int | None = None
+    quality: int | None = None
 
 
+class ItemResponse(BaseModel):
+    id: str = Field()
+    name: str
+    sell_in: int
+    quality: int
