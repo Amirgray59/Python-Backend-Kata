@@ -1,0 +1,8 @@
+structlog
+pytest
+fastapi 
+uvicorn
+approvaltests
+pytest-approvaltests
+coverage
+ruff 

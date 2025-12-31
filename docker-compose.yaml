@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stage-3-api
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: development
+    restart: unless-stopped
