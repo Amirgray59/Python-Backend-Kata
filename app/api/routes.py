@@ -9,7 +9,9 @@ from app.domain.models import (
 )
 from app.domain.errors import invalid_type, item_not_found
 from app.api.deps import get_db, FakeDB
+import structlog
 
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/items", tags=["items"])
 
@@ -35,6 +37,10 @@ def create_item(
 
     db[item_id] = created
     response.headers["Location"] = f"/items/{item_id}"
+    logger.info(
+        "item.create",
+        created
+    )
     return created
 
 
@@ -50,6 +56,11 @@ def get_item(
     item = db.get(item_id)
     if not item:
         item_not_found(item_id)
+
+    logger.info(
+        "item.get",
+        item_id=item_id
+    )
     return item
 
 
@@ -72,6 +83,11 @@ def update_item(
     data.update(updates)
 
     db[item_id] = data
+
+    logger.info(
+        "item.update",
+        data
+    )
     return data
 
 
@@ -87,4 +103,8 @@ def delete_item(
     if item_id not in db:
         item_not_found(item_id)
 
+    logger.info(
+        "item.delete",
+        item_id=item_id
+    )
     del db[item_id]

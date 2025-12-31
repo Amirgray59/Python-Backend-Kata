@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from app.api.routes import router as items_router
-
+from app.utils.logging import configure_logging
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +13,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app():
+    configure_logging()
     app = FastAPI(
         lifespan=lifespan,
     )
