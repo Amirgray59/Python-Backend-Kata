@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
 
-  db : 
+  postgres : 
     image: postgres:latest
     container_name: kata-postgres
     restart: always 
@@ -13,13 +13,24 @@ services:
     ports: 
       - "5432:5432"
   
+  mongo : 
+    image: mongo:latest
+    container_name: kata-mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    ports : 
+      - "27017:27017"
+
+
   api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: kata-backend
     depends_on: 
-      - db
+      - postgres
+      - mongo
     ports:
       - "8000:8000"
     environment:

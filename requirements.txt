@@ -9,3 +9,4 @@ approvaltests
 pytest-approvaltests
 coverage
 ruff 
+motor

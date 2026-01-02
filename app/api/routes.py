@@ -8,12 +8,14 @@ from app.domain.models import (
     ItemResponse,
 )
 from app.domain.errors import invalid_type, item_not_found
+
 from app.db.postgres.session import get_db
+from app.db.mongo.session import mongo_db
+from psycopg import Connection
+
 from app.utils.converter import itemTupleToDic
 import structlog
 
-
-from psycopg import Connection
 
 logger = structlog.get_logger()
 
@@ -40,7 +42,7 @@ def list_tables(db: Connection = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
     response_model=ItemResponse,
 )
-def create_item(
+async def create_item(
     item: ItemCreate,
     response: Response,
     db: Connection = Depends(get_db),
@@ -55,6 +57,15 @@ def create_item(
         db.commit()
 
     item_dict = itemTupleToDic(item)
+
+    await mongo_db.items_read.insert_one(
+    {
+        "_id": item_dict["id"],
+        "name": item_dict["name"],
+        "sell_in": item_dict["sell_in"],
+        "quality": item_dict["quality"]
+    }
+)
     
     logger.info(
         "item.create",
@@ -66,47 +77,40 @@ def create_item(
     "/{item_id}",
     response_model=ItemResponse,
 )
-def get_item(
+async def get_item(
     item_id: int,
     db: Connection = Depends(get_db),
 ):
 
-    with db.cursor() as cur :     
-        cur.execute("SELECT * FROM items WHERE id = %s", (item_id,))
-        item = cur.fetchone()
+    item = await mongo_db.items_read.find_one({"_id": item_id})
 
     if not item:
         item_not_found(item_id)
 
-    
-    item_dict = itemTupleToDic(item)
+    item["id"] = item.pop("_id")
 
     logger.info(
         "item.get",
         item_id=item_id
     )
     
-    return item_dict
+    return item
 
 
 @router.put(
     "/{item_id}",
     response_model=ItemResponse,
 )
-def update_item(
+async def update_item(
     item_id: int,
     payload: ItemUpdate,
     db: Connection = Depends(get_db),
 ):  
 
-    with db.cursor() as cur :     
-        cur.execute("SELECT * FROM items WHERE id = %s", (item_id,))
-        item = cur.fetchone()
+    item = await mongo_db.items_read.find_one({"_id": item_id})
 
     if not item:
         item_not_found(item_id)
-
-    item_dic = itemTupleToDic(item)
 
     with db.cursor() as cur :     
         cur.execute(
@@ -128,16 +132,13 @@ def update_item(
 
 @router.delete(
     "/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
 )
-def delete_item(
+async def delete_item(
     item_id: int,
     db: Connection = Depends(get_db),
 ):
-
-    with db.cursor() as cur :     
-        cur.execute("SELECT * FROM items WHERE id = %s", (item_id,))
-        item = cur.fetchone()
+    item = await mongo_db.items_read.find_one({"_id": item_id})
 
     if not item:
         item_not_found(item_id)
@@ -146,6 +147,8 @@ def delete_item(
     with db.cursor() as cur :     
         cur.execute("DELETE FROM items WHERE id = %s", (item_id,))
         db.commit()
+
+    await mongo_db.items_read.delete_one({"_id": item_id})
 
     logger.info(
         "item.delete",
