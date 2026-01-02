@@ -13,7 +13,7 @@ class ItemUpdate(BaseModel):
 
 
 class ItemResponse(BaseModel):
-    id: str = Field()
+    id: int
     name: str
     sell_in: int
     quality: int

@@ -1,3 +1,6 @@
+psycopg[binary]
+python-dotenv
+fastapi[standard]
 structlog
 pytest
 fastapi 

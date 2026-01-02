@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.routes import router as items_router
 from app.utils.logging import configure_logging
+from app.api.deps import create_tables
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,7 +19,10 @@ def create_app():
         lifespan=lifespan,
     )
 
+    create_tables()
+    
     app.include_router(items_router)
+    
 
     @app.get("/health", tags=["health"])
     def health():
