@@ -4,12 +4,10 @@ from dotenv import load_dotenv
 from contextlib import contextmanager
 from fastapi import Depends
 
-from typing import Dict
-
-
 load_dotenv()
 
-def create_tables():
+
+def get_db():
     conn = psycopg.connect(
         host=os.getenv("POSTGRES_HOST"),
         port=os.getenv("POSTGRES_PORT"),
@@ -18,15 +16,6 @@ def create_tables():
         password=os.getenv("POSTGRES_PASSWORD"),
     )
     try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS items (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(200),
-                    sell_in INTEGER,
-                    quality INTEGER
-                );
-            """)
-            conn.commit()
+        yield conn
     finally:
         conn.close()

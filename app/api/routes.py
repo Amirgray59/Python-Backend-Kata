@@ -8,103 +8,151 @@ from app.domain.models import (
     ItemResponse,
 )
 from app.domain.errors import invalid_type, item_not_found
-from app.api.deps import get_db, FakeDB
+
+from app.db.postgres.session import get_db
+from app.db.mongo.session import mongo_db
+from psycopg import Connection
+
+from app.utils.converter import itemTupleToDic
 import structlog
+
 
 logger = structlog.get_logger()
 
 router = APIRouter(prefix="/items", tags=["items"])
 
+@router.get("/tables")
+def list_tables(db: Connection = Depends(get_db)):
+    with db.cursor() as cur:
+        cur.execute(
+            """
+            SELECT tablename
+            FROM pg_tables
+            WHERE schemaname = 'public';
+            """
+        )
+        tables = [row[0] for row in cur.fetchall()]
+
+    return {
+        "tables": tables
+    }
 
 @router.post(
     "",
     status_code=status.HTTP_201_CREATED,
     response_model=ItemResponse,
 )
-def create_item(
+async def create_item(
     item: ItemCreate,
     response: Response,
-    db: FakeDB = Depends(get_db),
+    db: Connection = Depends(get_db),
 ):
-    item_id = str(uuid.uuid4())
 
-    created = {
-        "id": item_id,
-        "name": item.name,
-        "sell_in": item.sell_in,
-        "quality": item.quality,
+    with db.cursor() as cur :     
+        cur.execute(
+            "INSERT INTO items (name, sell_in, quality) VALUES (%s, %s, %s) RETURNING id, name, sell_in, quality",
+            (item.name, item.sell_in, item.quality)
+        )
+        item = cur.fetchone()
+        db.commit()
+
+    item_dict = itemTupleToDic(item)
+
+    await mongo_db.items_read.insert_one(
+    {
+        "_id": item_dict["id"],
+        "name": item_dict["name"],
+        "sell_in": item_dict["sell_in"],
+        "quality": item_dict["quality"]
     }
-
-    db[item_id] = created
-    response.headers["Location"] = f"/items/{item_id}"
+)
+    
     logger.info(
         "item.create",
-        created
+        item_dict
     )
-    return created
-
-
+    return item_dict 
 
 @router.get(
     "/{item_id}",
     response_model=ItemResponse,
 )
-def get_item(
-    item_id: str,
-    db: FakeDB = Depends(get_db),
+async def get_item(
+    item_id: int,
+    db: Connection = Depends(get_db),
 ):
-    item = db.get(item_id)
+
+    item = await mongo_db.items_read.find_one({"_id": item_id})
+
     if not item:
         item_not_found(item_id)
+
+    item["id"] = item.pop("_id")
 
     logger.info(
         "item.get",
         item_id=item_id
     )
+    
     return item
 
 
-@router.patch(
+@router.put(
     "/{item_id}",
     response_model=ItemResponse,
 )
-def update_item(
-    item_id: str,
+async def update_item(
+    item_id: int,
     payload: ItemUpdate,
-    db: FakeDB = Depends(get_db),
-):
-    item = db.get(item_id)
+    db: Connection = Depends(get_db),
+):  
+
+    item = await mongo_db.items_read.find_one({"_id": item_id})
+
     if not item:
         item_not_found(item_id)
 
-    data = item.copy()
+    with db.cursor() as cur :     
+        cur.execute(
+            "UPDATE items SET name=%s, sell_in=%s, quality=%s WHERE id=%s RETURNING id, name, sell_in, quality",
+            (payload.name, payload.sell_in, payload.quality, item_id)
+        )
+        new_item = cur.fetchone()
+        db.commit()
 
-    updates = payload.model_dump(exclude_unset=True)
-    data.update(updates)
-
-    db[item_id] = data
+    new_item_dic = itemTupleToDic(new_item)
 
     logger.info(
         "item.update",
-        data
+        new_item_dic
     )
-    return data
+    return new_item_dic
 
 
 
 @router.delete(
     "/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
 )
-def delete_item(
-    item_id: str,
-    db: FakeDB = Depends(get_db),
+async def delete_item(
+    item_id: int,
+    db: Connection = Depends(get_db),
 ):
-    if item_id not in db:
+    item = await mongo_db.items_read.find_one({"_id": item_id})
+
+    if not item:
         item_not_found(item_id)
+
+
+    with db.cursor() as cur :     
+        cur.execute("DELETE FROM items WHERE id = %s", (item_id,))
+        db.commit()
+
+    await mongo_db.items_read.delete_one({"_id": item_id})
 
     logger.info(
         "item.delete",
         item_id=item_id
     )
-    del db[item_id]
+
+    return {"detail": f"Item with id {item_id}, deleted"}
