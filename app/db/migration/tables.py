@@ -1,6 +1,7 @@
 import os
 import psycopg
 from dotenv import load_dotenv
+from app.db.mongo.session import mongo_db
 
 load_dotenv()
 
@@ -43,11 +44,6 @@ def create_tables():
                 );
             """)
 
-
-            # # INDEXES (access patterns)
-            # cur.execute("CREATE INDEX IF NOT EXISTS ix_items_owner ON items(owner_id);")
-            # cur.execute("CREATE INDEX IF NOT EXISTS ix_item_tags_item ON item_tags(item_id);")
-            # cur.execute("CREATE INDEX IF NOT EXISTS ix_item_tags_tag ON item_tags(tag_id);")
 
             conn.commit()
 

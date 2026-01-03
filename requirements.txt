@@ -10,3 +10,7 @@ pytest-approvaltests
 coverage
 ruff 
 motor
+alembic
+asyncio
+sqlalchemy
+
