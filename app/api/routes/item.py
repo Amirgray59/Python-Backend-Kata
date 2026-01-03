@@ -100,6 +100,13 @@ async def get_item(item_id: int):
     if not item:
         item_not_found(item_id)
 
+    owner = item["owner"]
+    item["owner"] = {
+        "id": owner["_id"],
+        "name": owner["name"],
+        "email": owner["email"],
+    }
+
     item["id"] = item.pop("_id")
     return item
 
