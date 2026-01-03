@@ -1,44 +1,27 @@
-from typing import Union 
-from fastapi.responses import JSONResponse
-from fastapi import status, HTTPException
-
-def report_error(
-    *,
-    status_code:int, 
-    type_: str,
-    title:str, 
-    detail: Union[None, str]) : 
-
-    body = {
-        "type": type_,
-        "title": title, 
-        "status": status_code
-    }
-
-    if detail : 
-        body["detail"] = detail 
-
-    return JSONResponse(
-        status_code=status_code,
-        content=body,
-        media_type="application/problem+json"
-    )
+from fastapi import HTTPException, status
 
 
-def invalid_type(detail:str) : 
-    return report_error(status_code=status.HTTP_400_BAD_REQUEST,
-    type_="https://example.com/problems/invalid-input",
-    title="Invalid input",
-    detail=detail
-    )
-
-def item_not_found(item_id: str) -> None:
+def item_not_found(item_id: int):
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail={
-            "type": "https://example.com/problems/item-not-found",
-            "title": "Item not found",
-            "status": 404,
-            "detail": f"Item with id '{item_id}' was not found",
-        },
+        detail=f"Item with id {item_id} not found",
     )
+
+def email_already_exist(email: str) :  
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail=f"Email already exist: {email}"
+    )
+
+def invalid_type(message: str):
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=message,
+    )
+
+def owner_not_found(owner_id:int) : 
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Owner with id {owner_id} not found"
+    )
+
