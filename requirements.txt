@@ -1,3 +1,6 @@
+psycopg[binary]
+python-dotenv
+fastapi[standard]
 structlog
 pytest
 fastapi 
@@ -6,3 +9,11 @@ approvaltests
 pytest-approvaltests
 coverage
 ruff 
+motor
+alembic
+asyncio
+httpx
+pytest-asyncio
+pytest-cov
+sqlalchemy
+

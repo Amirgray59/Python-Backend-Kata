@@ -1,34 +1,25 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-from app.api.routes import router as items_router
+from app.api.routes.item import router as item_router
+from app.api.routes.user import router as user_router
 from app.utils.logging import configure_logging
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup
+
     yield
     # shutdown
 
+configure_logging()
+app = FastAPI(lifespan=lifespan)
 
-def create_app():
-    configure_logging()
-    app = FastAPI(
-        lifespan=lifespan,
-    )
+app.include_router(item_router)
+app.include_router(user_router)
 
-    app.include_router(items_router)
+@app.get("/health", tags=["health"])
+def health():
+    return {"status": "ok"}
 
-    @app.get("/health", tags=["health"])
-    def health():
-        return {"status": "ok"}
-
-    @app.get("/ready", tags=["health"])
-    def ready():
-        return {"status": "ready"}
-
-    return app
-
-
-app = create_app()
+@app.get("/ready", tags=["health"])
+def ready():
+    return {"status": "ready"}
